@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f4f8">
+  <meta name="description" content="LittleKit Payment Pricing calculator for currency conversion, commission, and Xianyu fees.">
+  <title>LittleKit · Payment Pricing</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b1038'/%3E%3Cpath d='M15 21c0-4 3-7 7-7h9l18 18-9 9-18-18v19c0 4-3 7-7 7V21z' fill='%238154f5'/%3E%3Cpath d='M49 43c0 4-3 7-7 7h-9L15 32l9-9 18 18V22c0-4 3-7 7-7v28z' fill='%23baf5d0'/%3E%3C/svg%3E">
+  <style>
+    :root { color-scheme: light; --bg:#f4f4f8; --card:rgba(255,255,255,.88); --ink:#111116; --muted:#777781; --line:#e7e7ed; --blue:#087ff5; --green:#28a96b; --orange:#d88417; --purple:#6e3de6; --input:#f7f7fa; --input-border:#dedee6; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 12% 0%, rgba(110,61,230,.09), transparent 28rem), var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .shell { width:min(100%, 940px); margin:auto; padding:max(18px,env(safe-area-inset-top)) 16px max(22px,env(safe-area-inset-bottom)); }
+    header { display:flex; align-items:center; justify-content:space-between; margin:0 2px 14px; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:750; letter-spacing:-.02em; }
+    .mark { width:34px; height:34px; border-radius:10px; background:#1b1038; display:grid; place-items:center; box-shadow:0 6px 16px rgba(53,26,112,.16); }
+    .mark svg { width:24px; height:24px; }
+    .tool-name { color:var(--muted); font-size:.9rem; }
+    .layout { display:grid; gap:12px; }
+    .card { background:var(--card); border:1px solid rgba(255,255,255,.9); border-radius:20px; box-shadow:0 12px 30px rgba(25,20,50,.055); backdrop-filter:blur(18px); }
+    .result { padding:17px; }
+    .result-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .eyebrow { color:var(--blue); font-size:.9rem; font-weight:700; display:flex; align-items:center; gap:7px; }
+    .eyebrow::before { content:'✓'; display:grid; place-items:center; width:19px; height:19px; border-radius:50%; color:white; background:var(--blue); font-size:.72rem; }
+    .price { font-size:clamp(2rem,8vw,2.65rem); line-height:1.05; font-weight:780; letter-spacing:-.045em; margin:7px 0 4px; font-variant-numeric:tabular-nums; }
+    .note,.meta { color:var(--muted); font-size:.78rem; }
+    .copy { border:0; background:#edf5ff; color:var(--blue); border-radius:9px; padding:7px 10px; font-size:.8rem; font-weight:700; }
+    .fields { padding:0 14px; }
+    .row { min-height:52px; display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:0; }
+    .ico { color:var(--blue); font-size:1.08rem; width:24px; text-align:center; }
+    .label { font-size:.93rem; font-weight:560; }
+    .number { width:100%; height:32px; min-width:0; border:1px solid var(--input-border); outline:0; background:var(--input); border-radius:8px; box-shadow:inset 0 1px 2px rgba(20,20,35,.08),0 1px 0 rgba(255,255,255,.8); text-align:right; padding:5px 8px; font-variant-numeric:tabular-nums; color:var(--ink); transition:border-color .16s ease,box-shadow .16s ease,background .16s ease; }
+    .number:focus { border-color:var(--blue); background:var(--card); box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent),inset 0 1px 2px rgba(20,20,35,.06); }
+    .unit,select { color:var(--muted); font-size:.78rem; }
+    select { border:0; background:transparent; color:var(--blue); font-weight:650; outline:none; max-width:66px; }
+    .rate-row { padding:9px 0; min-height:67px; }
+    .rate-main { text-align:right; font-variant-numeric:tabular-nums; }
+    .refresh { width:30px; height:30px; border:0; border-radius:9px; color:var(--blue); background:#edf5ff; font-size:1rem; }
+    .rate-meta { grid-column:2 / 5; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:-6px; }
+    .status { display:flex; align-items:center; gap:5px; min-width:0; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--green); flex:0 0 auto; }
+    .dot.offline { background:var(--orange); }
+    .commission,.cashback { padding:8px 0 10px; border-bottom:1px solid var(--line); }
+    .commission .main,.cashback .main { display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; }
+    .segmented { grid-column:2 / 5; display:grid; grid-template-columns:1fr 1fr; background:#eeeef2; border-radius:10px; padding:2px; margin-top:5px; }
+    .segmented button { border:0; padding:7px 8px; border-radius:8px; background:transparent; color:#55555d; font-size:.78rem; }
+    .segmented button.active { background:white; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.08); font-weight:650; }
+    .breakdown { padding:14px 16px; }
+    .sum-row { display:flex; justify-content:space-between; gap:16px; padding:4px 0; font-size:.9rem; }
+    .sum-row span:last-child { font-variant-numeric:tabular-nums; }
+    .sum-row.profit { color:var(--green); font-weight:700; }
+    .sum-row.total { border-top:1px solid var(--line); margin-top:5px; padding-top:10px; font-weight:760; font-size:1rem; }
+    .toast { position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom)); transform:translate(-50%,20px); opacity:0; pointer-events:none; padding:9px 14px; border-radius:12px; background:rgba(20,20,25,.9); color:white; font-size:.84rem; transition:.2s ease; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    @media (min-width:760px) { .layout { grid-template-columns:1fr 1fr; align-items:start; } .result { grid-column:1; } .fields { grid-column:1; } .breakdown { grid-column:2; grid-row:1 / span 2; position:sticky; top:18px; } }
+    @media (max-width:390px) { .shell { padding-left:10px; padding-right:10px; } .row,.commission .main,.cashback .main { grid-template-columns:24px minmax(82px,1fr) 80px 42px; gap:6px; } .label { font-size:.86rem; } }
+    @media (prefers-color-scheme:dark) { :root { color-scheme:dark; --bg:#0e0e12; --card:rgba(28,28,34,.92); --ink:#f5f5f7; --muted:#a2a2ad; --line:#393940; --blue:#58a6ff; --input:#24242b; --input-border:#494952; } body { background:radial-gradient(circle at 12% 0%, rgba(112,66,230,.18), transparent 28rem), var(--bg); } .copy,.refresh { background:#172c44; } .segmented { background:#35353c; } .segmented button.active { background:#51515a; color:white; } .number { box-shadow:inset 0 1px 2px rgba(0,0,0,.35); } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand"><span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M12 19c0-4 3-7 7-7h10l23 23-10 10-23-23v23c0 4-3 7-7 7z" fill="#8154f5"/><path d="M52 45c0 4-3 7-7 7H35L12 29l10-10 23 23V19c0-4 3-7 7-7z" fill="#baf5d0"/></svg></span><span>LittleKit</span></div>
+      <div class="tool-name">Payment Pricing</div>
+    </header>
+    <section class="layout" aria-label="Payment pricing calculator">
+      <div class="card result">
+        <div class="result-top"><div class="eyebrow">Suggested Price</div><button class="copy" id="copy">Copy</button></div>
+        <div class="price" id="price">¥0.00</div>
+        <div class="note">Price excludes cashback; cashback is counted as profit</div>
+      </div>
+      <div class="card fields">
+        <label class="row"><span class="ico">＄</span><span class="label">Amount</span><input class="number" id="amount" inputmode="decimal" aria-label="Amount"><select id="currency" aria-label="Currency"><option>USD</option><option>EUR</option><option>GBP</option><option>JPY</option><option>HKD</option><option>CAD</option><option>AUD</option><option>SGD</option></select></label>
+        <div class="row rate-row"><span class="ico">¥</span><span class="label" id="pair">USD/CNY Rate</span><strong class="rate-main" id="adjustedRate">0.0000</strong><button class="refresh" id="refresh" aria-label="Refresh exchange rate">↻</button><div class="rate-meta meta"><span class="status"><i class="dot" id="dot"></i><span id="status">Saved reference rate</span></span><span id="baseRate">Base: 0.0000</span></div></div>
+        <label class="row"><span class="ico">↔</span><span class="label">FX Markup</span><input class="number" id="markup" inputmode="decimal" aria-label="FX markup"><span class="unit">%</span></label>
+        <div class="cashback"><div class="main"><span class="ico">↙</span><span class="label">Cashback</span><input class="number" id="cashback" inputmode="decimal" aria-label="Cashback"><span class="unit" id="cashbackUnit">CNY</span></div><div class="segmented"><button id="cashbackFixed" type="button">Fixed Amount</button><button id="cashbackPercent" type="button">Percentage</button></div></div>
+        <div class="commission"><div class="main"><span class="ico">◎</span><span class="label">My Commission</span><input class="number" id="commission" inputmode="decimal" aria-label="Commission"><span class="unit" id="commissionUnit">CNY</span></div><div class="segmented"><button id="fixed" type="button">Fixed Amount</button><button id="percent" type="button">Percentage</button></div></div>
+        <label class="row"><span class="ico">％</span><span class="label">Xianyu Fee</span><input class="number" id="xianyu" inputmode="decimal" aria-label="Xianyu fee"><span class="unit">%</span></label>
+      </div>
+      <div class="card breakdown">
+        <div class="sum-row"><span>FX Cost</span><span id="fxCost">¥0.00</span></div>
+        <div class="sum-row"><span>Markup</span><span id="markupCost">¥0.00</span></div>
+        <div class="sum-row"><span>Cashback</span><span id="cashbackCost">¥0.00</span></div>
+        <div class="sum-row"><span>Commission</span><span id="commissionCost">¥0.00</span></div>
+        <div class="sum-row"><span>Fee</span><span id="xianyuCost">¥0.00</span></div>
+        <div class="sum-row profit"><span>Profit</span><span id="profit">¥0.00</span></div>
+        <div class="sum-row total"><span>Final Price</span><span id="finalPrice">¥0.00</span></div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status">Price copied</div>
+  <script>
+    const ids = ['amount','currency','markup','cashback','commission','xianyu'];
+    const defaults = { amount:'100', currency:'USD', markup:'3', cashback:'0', cashbackMode:'fixed', commission:'0', commissionMode:'fixed', xianyu:'0.6', rate:'7.0000', rateDate:'Not updated' };
+    const state = Object.fromEntries(Object.entries(defaults).map(([k,v]) => [k, localStorage.getItem('littlekit.'+k) ?? v]));
+    const $ = id => document.getElementById(id);
+    const num = v => Math.max(0, Number.parseFloat(v) || 0);
+    const money = v => new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY',minimumFractionDigits:2}).format(v);
+    let timer;
+
+    function save() { Object.entries(state).forEach(([k,v]) => localStorage.setItem('littlekit.'+k,String(v))); }
+    function calculate() {
+      const base = num(state.rate), adjusted = base * (1 + num(state.markup)/100);
+      const baseCost = num(state.amount) * base;
+      const fx = num(state.amount) * adjusted;
+      const markupCost = fx - baseCost;
+      const cashback = state.cashbackMode === 'percent' ? fx * num(state.cashback)/100 : num(state.cashback);
+      const commission = state.commissionMode === 'percent' ? fx * num(state.commission)/100 : num(state.commission);
+      const feeBase = fx + commission;
+      const feeRate = Math.min(num(state.xianyu),99.99)/100;
+      const grossPrice = feeBase/(1-feeRate), xianyuCost = grossPrice-feeBase;
+      const final = grossPrice, profit = commission+cashback;
+      $('adjustedRate').textContent = adjusted.toFixed(4); $('baseRate').textContent = 'Base: '+base.toFixed(4);
+      $('fxCost').textContent = money(fx); $('markupCost').textContent = money(markupCost);
+      $('cashbackCost').textContent = money(cashback); $('profit').textContent = money(profit);
+      $('commissionCost').textContent = money(commission); $('xianyuCost').textContent = money(xianyuCost);
+      $('finalPrice').textContent = money(final); $('price').textContent = money(final); $('pair').textContent = state.currency+'/CNY Rate';
+      $('commissionUnit').textContent = state.commissionMode === 'percent' ? '%' : 'CNY';
+      $('cashbackUnit').textContent = state.cashbackMode === 'percent' ? '%' : 'CNY';
+      $('cashbackFixed').classList.toggle('active',state.cashbackMode==='fixed'); $('cashbackPercent').classList.toggle('active',state.cashbackMode==='percent');
+      $('fixed').classList.toggle('active',state.commissionMode==='fixed'); $('percent').classList.toggle('active',state.commissionMode==='percent');
+      save();
+    }
+    async function refreshRate() {
+      $('refresh').disabled=true; $('refresh').textContent='…';
+      try {
+        const res=await fetch('https://api.frankfurter.dev/v2/rate/'+state.currency+'/CNY'); if(!res.ok) throw new Error();
+        const data=await res.json(); state.rate=String(data.rate); state.rateDate=data.date; $('dot').classList.remove('offline'); $('status').textContent='Latest reference · '+data.date;
+      } catch { $('dot').classList.add('offline'); $('status').textContent='Offline · Using saved rate'; }
+      finally { $('refresh').disabled=false; $('refresh').textContent='↻'; calculate(); }
+    }
+    ids.forEach(id => { const el=$(id); el.value=state[id]; el.addEventListener('focus',()=>el.select()); el.addEventListener('click',()=>el.select()); el.addEventListener('input',()=>{ state[id]=el.value; calculate(); if(id==='amount'){clearTimeout(timer);timer=setTimeout(refreshRate,800);} }); el.addEventListener('change',()=>{state[id]=el.value; calculate(); if(id==='currency')refreshRate();}); });
+    $('cashbackFixed').onclick=()=>{state.cashbackMode='fixed';calculate()}; $('cashbackPercent').onclick=()=>{state.cashbackMode='percent';calculate()};
+    $('fixed').onclick=()=>{state.commissionMode='fixed';calculate()}; $('percent').onclick=()=>{state.commissionMode='percent';calculate()}; $('refresh').onclick=refreshRate;
+    $('copy').onclick=async()=>{ const text=num(state.amount) ? $('price').textContent.replace(/\s/g,'') : '¥0.00'; await navigator.clipboard.writeText(text); $('toast').classList.add('show'); $('copy').textContent='Copied'; setTimeout(()=>{$('toast').classList.remove('show');$('copy').textContent='Copy'},1400); };
+    $('status').textContent=state.rateDate==='Not updated'?'Saved reference rate':'Latest reference · '+state.rateDate; calculate();
+    if (document.modelContext?.registerTool) {
+      document.modelContext.registerTool({
+        name:'calculate_payment_price', title:'Calculate payment price',
+        description:'Update the LittleKit calculator and return the CNY price including FX markup, cashback, commission, and Xianyu fee.',
+        inputSchema:{type:'object',properties:{amount:{type:'number',minimum:0},currency:{type:'string',enum:['USD','EUR','GBP','JPY','HKD','CAD','AUD','SGD']},fxMarkupPercent:{type:'number',minimum:0},cashback:{type:'number',minimum:0},cashbackMode:{type:'string',enum:['fixed','percent']},commission:{type:'number',minimum:0},commissionMode:{type:'string',enum:['fixed','percent']},xianyuFeePercent:{type:'number',minimum:0,exclusiveMaximum:100}},required:['amount'],additionalProperties:false},
+        annotations:{readOnlyHint:false,untrustedContentHint:false},
+        async execute(input){
+          if(!input || typeof input.amount!=='number' || input.amount<0) throw new Error('A non-negative amount is required.');
+          state.amount=String(input.amount); if(input.currency)state.currency=input.currency;
+          if(input.fxMarkupPercent!==undefined)state.markup=String(input.fxMarkupPercent);
+          if(input.cashback!==undefined)state.cashback=String(input.cashback);
+          if(input.cashbackMode)state.cashbackMode=input.cashbackMode;
+          if(input.commission!==undefined)state.commission=String(input.commission);
+          if(input.commissionMode)state.commissionMode=input.commissionMode;
+          if(input.xianyuFeePercent!==undefined)state.xianyu=String(input.xianyuFeePercent);
+          ids.forEach(id=>$(id).value=state[id]); await refreshRate();
+          return {currency:state.currency,amount:num(state.amount),baseRate:num(state.rate),adjustedRate:Number($('adjustedRate').textContent),profitCNY:Number($('profit').textContent.replace(/[^0-9.-]/g,'')),finalPriceCNY:Number($('price').textContent.replace(/[^0-9.-]/g,''))};
+        }
+      });
+    }
+  </script>
+</body>
+</html>
