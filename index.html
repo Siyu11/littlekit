@@ -95,7 +95,7 @@
   <div class="toast" id="toast" role="status">Price copied</div>
   <script>
     const ids = ['amount','currency','markup','cashback','commission','xianyu'];
-    const defaults = { amount:'100', currency:'USD', markup:'3', cashback:'0', cashbackMode:'fixed', commission:'0', commissionMode:'fixed', xianyu:'0.6', rate:'7.0000', rateDate:'Not updated' };
+    const defaults = { amount:'100', currency:'USD', markup:'3', cashback:'0', cashbackMode:'fixed', commission:'0', commissionMode:'fixed', xianyu:'0.6', rate:'7.0000', rateDate:'Not updated', rateSource:'saved' };
     const state = Object.fromEntries(Object.entries(defaults).map(([k,v]) => [k, localStorage.getItem('littlekit.'+k) ?? v]));
     const $ = id => document.getElementById(id);
     const num = v => Math.max(0, Number.parseFloat(v) || 0);
@@ -128,16 +128,24 @@
     async function refreshRate() {
       $('refresh').disabled=true; $('refresh').textContent='…';
       try {
-        const res=await fetch('https://api.frankfurter.dev/v2/rate/'+state.currency+'/CNY'); if(!res.ok) throw new Error();
-        const data=await res.json(); state.rate=String(data.rate); state.rateDate=data.date; $('dot').classList.remove('offline'); $('status').textContent='Latest reference · '+data.date;
-      } catch { $('dot').classList.add('offline'); $('status').textContent='Offline · Using saved rate'; }
+        const res=await fetch('https://api.coinbase.com/v2/exchange-rates?currency=USD'); if(!res.ok) throw new Error();
+        const rates=(await res.json()).data.rates, cny=Number(rates.CNY), selected=Number(rates[state.currency]);
+        if(!Number.isFinite(cny)||!Number.isFinite(selected)||selected<=0) throw new Error();
+        state.rate=String(cny/selected); state.rateDate=new Date().toLocaleString('sv-SE').replace(' ',' · '); state.rateSource='live';
+        $('dot').classList.remove('offline'); $('status').textContent='Live market rate · '+state.rateDate;
+      } catch {
+        try {
+          const res=await fetch('https://api.frankfurter.dev/v2/rate/'+state.currency+'/CNY'); if(!res.ok) throw new Error();
+          const data=await res.json(); state.rate=String(data.rate); state.rateDate=data.date; state.rateSource='reference'; $('dot').classList.remove('offline'); $('status').textContent='Reference rate · '+data.date;
+        } catch { $('dot').classList.add('offline'); $('status').textContent='Offline · Using saved rate'; }
+      }
       finally { $('refresh').disabled=false; $('refresh').textContent='↻'; calculate(); }
     }
     ids.forEach(id => { const el=$(id); el.value=state[id]; el.addEventListener('focus',()=>el.select()); el.addEventListener('click',()=>el.select()); el.addEventListener('input',()=>{ state[id]=el.value; calculate(); if(id==='amount'){clearTimeout(timer);timer=setTimeout(refreshRate,800);} }); el.addEventListener('change',()=>{state[id]=el.value; calculate(); if(id==='currency')refreshRate();}); });
     $('cashbackFixed').onclick=()=>{state.cashbackMode='fixed';calculate()}; $('cashbackPercent').onclick=()=>{state.cashbackMode='percent';calculate()};
     $('fixed').onclick=()=>{state.commissionMode='fixed';calculate()}; $('percent').onclick=()=>{state.commissionMode='percent';calculate()}; $('refresh').onclick=refreshRate;
     $('copy').onclick=async()=>{ const text=num(state.amount) ? $('price').textContent.replace(/\s/g,'') : '¥0.00'; await navigator.clipboard.writeText(text); $('toast').classList.add('show'); $('copy').textContent='Copied'; setTimeout(()=>{$('toast').classList.remove('show');$('copy').textContent='Copy'},1400); };
-    $('status').textContent=state.rateDate==='Not updated'?'Saved reference rate':'Latest reference · '+state.rateDate; calculate();
+    $('status').textContent=state.rateDate==='Not updated'?'Saved reference rate':(state.rateSource==='live'?'Live market rate · ':state.rateSource==='reference'?'Reference rate · ':'Saved rate · ')+state.rateDate; calculate(); refreshRate();
     if (document.modelContext?.registerTool) {
       document.modelContext.registerTool({
         name:'calculate_payment_price', title:'Calculate payment price',
