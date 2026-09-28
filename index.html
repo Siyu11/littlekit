@@ -115,7 +115,7 @@
       const grossPrice = feeBase/(1-feeRate), xianyuCost = grossPrice-feeBase;
       const final = grossPrice, profit = commission+cashback;
       $('adjustedRate').textContent = adjusted.toFixed(4); $('baseRate').textContent = 'Base: '+base.toFixed(4);
-      $('fxCost').textContent = money(fx); $('markupCost').textContent = money(markupCost);
+      $('fxCost').textContent = money(baseCost); $('markupCost').textContent = money(markupCost);
       $('cashbackCost').textContent = money(cashback); $('profit').textContent = money(profit);
       $('commissionCost').textContent = money(commission); $('xianyuCost').textContent = money(xianyuCost);
       $('finalPrice').textContent = money(final); $('price').textContent = money(final); $('pair').textContent = state.currency+'/CNY Rate';
