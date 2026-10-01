@@ -28,8 +28,9 @@
     .price { font-size:clamp(2rem,8vw,2.65rem); line-height:1.05; font-weight:780; letter-spacing:-.045em; margin:7px 0 4px; font-variant-numeric:tabular-nums; }
     .note,.meta { color:var(--muted); font-size:.78rem; }
     .copy { border:0; background:#edf5ff; color:var(--blue); border-radius:9px; padding:7px 10px; font-size:.8rem; font-weight:700; }
-    .fields { padding:0 14px; }
-    .row { min-height:52px; display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
+    .fields { padding:0 16px 4px; }
+    .field-heading { padding:14px 0 5px; color:var(--muted); font-size:.67rem; font-weight:750; letter-spacing:.08em; }
+    .row { min-height:54px; display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
     .row:last-child { border-bottom:0; }
     .ico { color:var(--blue); font-size:1.08rem; width:24px; text-align:center; }
     .label { font-size:.93rem; font-weight:560; }
@@ -44,17 +45,18 @@
     .status { display:flex; align-items:center; gap:5px; min-width:0; }
     .dot { width:7px; height:7px; border-radius:50%; background:var(--green); flex:0 0 auto; }
     .dot.offline { background:var(--orange); }
-    .commission,.cashback { padding:8px 0 10px; border-bottom:1px solid var(--line); }
+    .commission,.cashback { padding:10px 0 12px; border-bottom:1px solid var(--line); }
     .commission .main,.cashback .main { display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; }
-    .commission-heading { display:flex; align-items:center; gap:8px; }
-    .commission-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:7px 0 0 36px; }
-    .commission-inputs label { color:var(--muted); font-size:.72rem; }
-    .commission-inputs .commission-value { display:grid; grid-template-columns:minmax(0,1fr) 31px; align-items:center; gap:5px; margin-top:3px; }
+    .commission-heading { display:flex; align-items:center; gap:8px; min-height:28px; }
+    .commission-inputs { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:7px 0 0 36px; }
+    .commission-inputs label { color:var(--muted); font-size:.72rem; font-weight:650; }
+    .commission-inputs .commission-value { display:grid; grid-template-columns:minmax(0,1fr) 31px; align-items:center; gap:5px; margin-top:4px; }
     .segmented { grid-column:2 / 5; display:grid; grid-template-columns:1fr 1fr; background:#eeeef2; border-radius:10px; padding:2px; margin-top:5px; }
     .segmented button { border:0; padding:7px 8px; border-radius:8px; background:transparent; color:#55555d; font-size:.78rem; }
     .segmented button.active { background:white; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.08); font-weight:650; }
-    .breakdown { padding:14px 16px; }
-    .sum-row { display:flex; justify-content:space-between; gap:16px; padding:4px 0; font-size:.9rem; }
+    .breakdown { padding:17px 20px; }
+    .breakdown-title { color:var(--muted); font-size:.68rem; font-weight:750; letter-spacing:.08em; margin-bottom:8px; }
+    .sum-row { display:flex; justify-content:space-between; gap:16px; padding:5px 0; font-size:.9rem; }
     .sum-row span:last-child { font-variant-numeric:tabular-nums; }
     .sum-row.profit { color:var(--green); font-weight:700; }
     .sum-row.total { border-top:1px solid var(--line); margin-top:5px; padding-top:10px; font-weight:760; font-size:1rem; }
@@ -78,14 +80,17 @@
         <div class="note">Price excludes cashback; cashback is counted as profit</div>
       </div>
       <div class="card fields">
+        <div class="field-heading">ITEM</div>
         <label class="row"><span class="ico">＄</span><span class="label">Amount</span><input class="number" id="amount" inputmode="decimal" aria-label="Amount"><select id="currency" aria-label="Currency"><option>USD</option><option>EUR</option><option>GBP</option><option>JPY</option><option>HKD</option><option>CAD</option><option>AUD</option><option>SGD</option><option>MYR</option><option>TWD</option><option>IDR</option><option>THB</option></select></label>
         <div class="row rate-row"><span class="ico">¥</span><span class="label" id="pair">USD/CNY Rate</span><strong class="rate-main" id="adjustedRate">0.0000</strong><button class="refresh" id="refresh" aria-label="Refresh exchange rate">↻</button><div class="rate-meta meta"><span class="status"><i class="dot" id="dot"></i><span id="status">Saved reference rate</span></span><span id="baseRate">Base: 0.0000</span></div></div>
         <label class="row"><span class="ico">↔</span><span class="label">FX Markup</span><input class="number" id="markup" inputmode="decimal" aria-label="FX markup"><span class="unit">%</span></label>
+        <div class="field-heading">FEES &amp; EARNINGS</div>
         <div class="cashback"><div class="main"><span class="ico">↙</span><span class="label">Cashback</span><input class="number" id="cashback" inputmode="decimal" aria-label="Cashback"><span class="unit" id="cashbackUnit">CNY</span></div><div class="segmented"><button id="cashbackFixed" type="button">Fixed Amount</button><button id="cashbackPercent" type="button">Percentage</button></div></div>
         <div class="commission"><div class="commission-heading"><span class="ico">◎</span><span class="label">My Commission</span></div><div class="commission-inputs"><label>Minimum<div class="commission-value"><input class="number" id="commissionMin" inputmode="decimal" aria-label="Minimum commission"><span class="unit">CNY</span></div></label><label>Rate<div class="commission-value"><input class="number" id="commissionPercent" inputmode="decimal" aria-label="Commission rate"><span class="unit">%</span></div></label></div></div>
         <label class="row"><span class="ico">％</span><span class="label">Xianyu Fee</span><input class="number" id="xianyu" inputmode="decimal" aria-label="Xianyu fee"><span class="unit">%</span></label>
       </div>
       <div class="card breakdown">
+        <div class="breakdown-title">PRICE BREAKDOWN</div>
         <div class="sum-row"><span>FX Cost</span><span id="fxCost">¥0.00</span></div>
         <div class="sum-row"><span>Markup</span><span id="markupCost">¥0.00</span></div>
         <div class="sum-row"><span>Commission</span><span id="commissionCost">¥0.00</span></div>
