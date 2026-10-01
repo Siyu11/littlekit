@@ -46,6 +46,10 @@
     .dot.offline { background:var(--orange); }
     .commission,.cashback { padding:8px 0 10px; border-bottom:1px solid var(--line); }
     .commission .main,.cashback .main { display:grid; grid-template-columns:28px minmax(110px,1fr) 92px 48px; align-items:center; gap:8px; }
+    .commission-heading { display:flex; align-items:center; gap:8px; }
+    .commission-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:7px 0 0 36px; }
+    .commission-inputs label { color:var(--muted); font-size:.72rem; }
+    .commission-inputs .commission-value { display:grid; grid-template-columns:minmax(0,1fr) 31px; align-items:center; gap:5px; margin-top:3px; }
     .segmented { grid-column:2 / 5; display:grid; grid-template-columns:1fr 1fr; background:#eeeef2; border-radius:10px; padding:2px; margin-top:5px; }
     .segmented button { border:0; padding:7px 8px; border-radius:8px; background:transparent; color:#55555d; font-size:.78rem; }
     .segmented button.active { background:white; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.08); font-weight:650; }
@@ -78,7 +82,7 @@
         <div class="row rate-row"><span class="ico">¥</span><span class="label" id="pair">USD/CNY Rate</span><strong class="rate-main" id="adjustedRate">0.0000</strong><button class="refresh" id="refresh" aria-label="Refresh exchange rate">↻</button><div class="rate-meta meta"><span class="status"><i class="dot" id="dot"></i><span id="status">Saved reference rate</span></span><span id="baseRate">Base: 0.0000</span></div></div>
         <label class="row"><span class="ico">↔</span><span class="label">FX Markup</span><input class="number" id="markup" inputmode="decimal" aria-label="FX markup"><span class="unit">%</span></label>
         <div class="cashback"><div class="main"><span class="ico">↙</span><span class="label">Cashback</span><input class="number" id="cashback" inputmode="decimal" aria-label="Cashback"><span class="unit" id="cashbackUnit">CNY</span></div><div class="segmented"><button id="cashbackFixed" type="button">Fixed Amount</button><button id="cashbackPercent" type="button">Percentage</button></div></div>
-        <div class="commission"><div class="main"><span class="ico">◎</span><span class="label">My Commission</span><input class="number" id="commission" inputmode="decimal" aria-label="Commission"><span class="unit" id="commissionUnit">CNY</span></div><div class="segmented"><button id="fixed" type="button">Fixed Amount</button><button id="percent" type="button">Percentage</button></div></div>
+        <div class="commission"><div class="commission-heading"><span class="ico">◎</span><span class="label">My Commission</span></div><div class="commission-inputs"><label>Minimum<div class="commission-value"><input class="number" id="commissionMin" inputmode="decimal" aria-label="Minimum commission"><span class="unit">CNY</span></div></label><label>Rate<div class="commission-value"><input class="number" id="commissionPercent" inputmode="decimal" aria-label="Commission rate"><span class="unit">%</span></div></label></div></div>
         <label class="row"><span class="ico">％</span><span class="label">Xianyu Fee</span><input class="number" id="xianyu" inputmode="decimal" aria-label="Xianyu fee"><span class="unit">%</span></label>
       </div>
       <div class="card breakdown">
@@ -94,9 +98,13 @@
   </main>
   <div class="toast" id="toast" role="status">Price copied</div>
   <script>
-    const ids = ['amount','currency','markup','cashback','commission','xianyu'];
-    const defaults = { amount:'100', currency:'USD', markup:'3', cashback:'0', cashbackMode:'fixed', commission:'0', commissionMode:'fixed', xianyu:'0.6', rate:'7.0000', rateDate:'Not updated', rateSource:'saved' };
+    const ids = ['amount','currency','markup','cashback','commissionMin','commissionPercent','xianyu'];
+    const defaults = { amount:'100', currency:'USD', markup:'3', cashback:'0', cashbackMode:'fixed', commissionMin:'0', commissionPercent:'0', xianyu:'0.6', rate:'7.0000', rateDate:'Not updated', rateSource:'saved' };
     const state = Object.fromEntries(Object.entries(defaults).map(([k,v]) => [k, localStorage.getItem('littlekit.'+k) ?? v]));
+    const legacyCommission=localStorage.getItem('littlekit.commission'), legacyCommissionMode=localStorage.getItem('littlekit.commissionMode');
+    if (legacyCommission !== null && localStorage.getItem('littlekit.commissionMin') === null && localStorage.getItem('littlekit.commissionPercent') === null) {
+      if (legacyCommissionMode === 'percent') state.commissionPercent=legacyCommission; else state.commissionMin=legacyCommission;
+    }
     const $ = id => document.getElementById(id);
     const num = v => Math.max(0, Number.parseFloat(v) || 0);
     const money = v => new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY',minimumFractionDigits:2}).format(v);
@@ -109,7 +117,7 @@
       const fx = num(state.amount) * adjusted;
       const markupCost = fx - baseCost;
       const cashback = state.cashbackMode === 'percent' ? fx * num(state.cashback)/100 : num(state.cashback);
-      const commission = state.commissionMode === 'percent' ? fx * num(state.commission)/100 : num(state.commission);
+      const commission = Math.max(num(state.commissionMin), fx * num(state.commissionPercent)/100);
       const feeBase = fx + commission;
       const feeRate = Math.min(num(state.xianyu),99.99)/100;
       const grossPrice = feeBase/(1-feeRate), xianyuCost = grossPrice-feeBase;
@@ -119,10 +127,8 @@
       $('cashbackCost').textContent = money(cashback); $('profit').textContent = money(profit);
       $('commissionCost').textContent = money(commission); $('xianyuCost').textContent = money(xianyuCost);
       $('finalPrice').textContent = money(final); $('price').textContent = money(final); $('pair').textContent = state.currency+'/CNY Rate';
-      $('commissionUnit').textContent = state.commissionMode === 'percent' ? '%' : 'CNY';
       $('cashbackUnit').textContent = state.cashbackMode === 'percent' ? '%' : 'CNY';
       $('cashbackFixed').classList.toggle('active',state.cashbackMode==='fixed'); $('cashbackPercent').classList.toggle('active',state.cashbackMode==='percent');
-      $('fixed').classList.toggle('active',state.commissionMode==='fixed'); $('percent').classList.toggle('active',state.commissionMode==='percent');
       save();
     }
     async function refreshRate() {
@@ -143,14 +149,14 @@
     }
     ids.forEach(id => { const el=$(id); el.value=state[id]; el.addEventListener('focus',()=>el.select()); el.addEventListener('click',()=>el.select()); el.addEventListener('input',()=>{ state[id]=el.value; calculate(); if(id==='amount'){clearTimeout(timer);timer=setTimeout(refreshRate,800);} }); el.addEventListener('change',()=>{state[id]=el.value; calculate(); if(id==='currency')refreshRate();}); });
     $('cashbackFixed').onclick=()=>{state.cashbackMode='fixed';calculate()}; $('cashbackPercent').onclick=()=>{state.cashbackMode='percent';calculate()};
-    $('fixed').onclick=()=>{state.commissionMode='fixed';calculate()}; $('percent').onclick=()=>{state.commissionMode='percent';calculate()}; $('refresh').onclick=refreshRate;
+    $('refresh').onclick=refreshRate;
     $('copy').onclick=async()=>{ const text=num(state.amount) ? $('price').textContent.replace(/\s/g,'') : '¥0.00'; await navigator.clipboard.writeText(text); $('toast').classList.add('show'); $('copy').textContent='Copied'; setTimeout(()=>{$('toast').classList.remove('show');$('copy').textContent='Copy'},1400); };
     $('status').textContent=state.rateDate==='Not updated'?'Saved reference rate':(state.rateSource==='live'?'Live market rate · ':state.rateSource==='reference'?'Reference rate · ':'Saved rate · ')+state.rateDate; calculate(); refreshRate();
     if (document.modelContext?.registerTool) {
       document.modelContext.registerTool({
         name:'calculate_payment_price', title:'Calculate payment price',
         description:'Update the LittleKit calculator and return the CNY price including FX markup, cashback, commission, and Xianyu fee.',
-        inputSchema:{type:'object',properties:{amount:{type:'number',minimum:0},currency:{type:'string',enum:['USD','EUR','GBP','JPY','HKD','CAD','AUD','SGD','MYR','TWD','IDR','THB']},fxMarkupPercent:{type:'number',minimum:0},cashback:{type:'number',minimum:0},cashbackMode:{type:'string',enum:['fixed','percent']},commission:{type:'number',minimum:0},commissionMode:{type:'string',enum:['fixed','percent']},xianyuFeePercent:{type:'number',minimum:0,exclusiveMaximum:100}},required:['amount'],additionalProperties:false},
+        inputSchema:{type:'object',properties:{amount:{type:'number',minimum:0},currency:{type:'string',enum:['USD','EUR','GBP','JPY','HKD','CAD','AUD','SGD','MYR','TWD','IDR','THB']},fxMarkupPercent:{type:'number',minimum:0},cashback:{type:'number',minimum:0},cashbackMode:{type:'string',enum:['fixed','percent']},commissionMinimum:{type:'number',minimum:0},commissionPercent:{type:'number',minimum:0},xianyuFeePercent:{type:'number',minimum:0,exclusiveMaximum:100}},required:['amount'],additionalProperties:false},
         annotations:{readOnlyHint:false,untrustedContentHint:false},
         async execute(input){
           if(!input || typeof input.amount!=='number' || input.amount<0) throw new Error('A non-negative amount is required.');
@@ -158,8 +164,8 @@
           if(input.fxMarkupPercent!==undefined)state.markup=String(input.fxMarkupPercent);
           if(input.cashback!==undefined)state.cashback=String(input.cashback);
           if(input.cashbackMode)state.cashbackMode=input.cashbackMode;
-          if(input.commission!==undefined)state.commission=String(input.commission);
-          if(input.commissionMode)state.commissionMode=input.commissionMode;
+          if(input.commissionMinimum!==undefined)state.commissionMin=String(input.commissionMinimum);
+          if(input.commissionPercent!==undefined)state.commissionPercent=String(input.commissionPercent);
           if(input.xianyuFeePercent!==undefined)state.xianyu=String(input.xianyuFeePercent);
           ids.forEach(id=>$(id).value=state[id]); await refreshRate();
           return {currency:state.currency,amount:num(state.amount),baseRate:num(state.rate),adjustedRate:Number($('adjustedRate').textContent),profitCNY:Number($('profit').textContent.replace(/[^0-9.-]/g,'')),finalPriceCNY:Number($('price').textContent.replace(/[^0-9.-]/g,''))};
