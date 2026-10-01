@@ -117,7 +117,7 @@
       const fx = num(state.amount) * adjusted;
       const markupCost = fx - baseCost;
       const cashback = state.cashbackMode === 'percent' ? fx * num(state.cashback)/100 : num(state.cashback);
-      const commission = Math.max(num(state.commissionMin), fx * num(state.commissionPercent)/100);
+      const commission = Math.max(num(state.commissionMin), baseCost * num(state.commissionPercent)/100);
       const feeBase = fx + commission;
       const feeRate = Math.min(num(state.xianyu),99.99)/100;
       const grossPrice = feeBase/(1-feeRate), xianyuCost = grossPrice-feeBase;
