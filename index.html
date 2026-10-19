@@ -27,6 +27,8 @@
     .eyebrow::before { content:'✓'; display:grid; place-items:center; width:19px; height:19px; border-radius:50%; color:white; background:var(--blue); font-size:.72rem; }
     .price { font-size:clamp(2rem,8vw,2.65rem); line-height:1.05; font-weight:780; letter-spacing:-.045em; margin:7px 0 4px; font-variant-numeric:tabular-nums; }
     .note,.meta { color:var(--muted); font-size:.78rem; }
+    .effective-rate { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 7px; padding:9px 10px; border-radius:10px; background:var(--input); color:var(--muted); font-size:.78rem; }
+    .effective-rate strong { color:var(--ink); font-size:.92rem; font-variant-numeric:tabular-nums; }
     .copy { border:0; background:#edf5ff; color:var(--blue); border-radius:9px; padding:7px 10px; font-size:.8rem; font-weight:700; }
     .fields { padding:0 16px 4px; }
     .field-heading { padding:14px 0 5px; color:var(--muted); font-size:.67rem; font-weight:750; letter-spacing:.08em; }
@@ -77,6 +79,7 @@
       <div class="card result">
         <div class="result-top"><div class="eyebrow">Suggested Price</div><button class="copy" id="copy">Copy</button></div>
         <div class="price" id="price">¥0.00</div>
+        <div class="effective-rate"><span id="effectiveRateLabel">Effective USD/CNY</span><strong id="effectiveRate">—</strong></div>
         <div class="note">Price excludes cashback; cashback is counted as profit</div>
       </div>
       <div class="card fields">
@@ -131,7 +134,9 @@
       $('fxCost').textContent = money(baseCost); $('markupCost').textContent = money(markupCost);
       $('cashbackCost').textContent = money(cashback); $('profit').textContent = money(profit);
       $('commissionCost').textContent = money(commission); $('xianyuCost').textContent = money(xianyuCost);
+      const effectiveRate = num(state.amount) ? final/num(state.amount) : 0;
       $('finalPrice').textContent = money(final); $('price').textContent = money(final); $('pair').textContent = state.currency+'/CNY Rate';
+      $('effectiveRateLabel').textContent = 'Effective '+state.currency+'/CNY'; $('effectiveRate').textContent = num(state.amount) ? effectiveRate.toFixed(4) : '—';
       $('cashbackUnit').textContent = state.cashbackMode === 'percent' ? '%' : 'CNY';
       $('cashbackFixed').classList.toggle('active',state.cashbackMode==='fixed'); $('cashbackPercent').classList.toggle('active',state.cashbackMode==='percent');
       save();
@@ -173,7 +178,7 @@
           if(input.commissionPercent!==undefined)state.commissionPercent=String(input.commissionPercent);
           if(input.xianyuFeePercent!==undefined)state.xianyu=String(input.xianyuFeePercent);
           ids.forEach(id=>$(id).value=state[id]); await refreshRate();
-          return {currency:state.currency,amount:num(state.amount),baseRate:num(state.rate),adjustedRate:Number($('adjustedRate').textContent),profitCNY:Number($('profit').textContent.replace(/[^0-9.-]/g,'')),finalPriceCNY:Number($('price').textContent.replace(/[^0-9.-]/g,''))};
+          return {currency:state.currency,amount:num(state.amount),baseRate:num(state.rate),adjustedRate:Number($('adjustedRate').textContent),effectiveRateCNY:Number($('effectiveRate').textContent),profitCNY:Number($('profit').textContent.replace(/[^0-9.-]/g,'')),finalPriceCNY:Number($('price').textContent.replace(/[^0-9.-]/g,''))};
         }
       });
     }
